@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Estadísticas de Control de Acceso</title>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--tx:#1b2430;--mu:#667085;--bd:#e2e6ec;--ac:#1f6feb;--ac2:#0d9488;--hd:#eef2f7;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;--card:#18202a;--tx:#e6ebf2;--mu:#98a2b3;--bd:#2a3441;--ac:#5b9cff;--ac2:#2dd4bf;--hd:#202a37}}
+:root[data-theme="dark"]{--bg:#0f141b;--card:#18202a;--tx:#e6ebf2;--mu:#98a2b3;--bd:#2a3441;--ac:#5b9cff;--ac2:#2dd4bf;--hd:#202a37}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.w{max-width:1280px;margin:0 auto;padding:18px 14px 40px}
+h1{font-size:22px;margin:0 0 2px}h2{font-size:15px;margin:0 0 10px}
+.sub{color:var(--mu);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px}
+#drop{border:2px dashed var(--bd);text-align:center;padding:28px 14px;cursor:pointer;border-radius:12px;background:var(--card)}
+#drop.o{border-color:var(--ac)}#drop b{color:var(--ac)}
+.f{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.f label{display:flex;flex-direction:column;font-size:12px;color:var(--mu);gap:3px}
+select,input[type=date],input[type=search]{background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:7px 9px;font:inherit;min-width:150px}
+button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:8px 12px;font:inherit;cursor:pointer}
+button.s{background:var(--hd);color:var(--tx);border:1px solid var(--bd)}
+.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.k{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px}
+.k b{display:block;font-size:24px}.k span{color:var(--mu);font-size:12px}.k i{display:block;font-size:11px;color:var(--mu);font-style:normal}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;margin-bottom:14px}
+.g .card{margin:0}.cv{position:relative;height:290px}
+.tw{overflow-x:auto;max-height:520px;overflow-y:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{position:sticky;top:0;background:var(--hd);text-align:left;padding:7px 9px;cursor:pointer;white-space:nowrap;border-bottom:1px solid var(--bd)}
+td{padding:6px 9px;border-bottom:1px solid var(--bd);white-space:nowrap}td.n{text-align:right;font-variant-numeric:tabular-nums}
+.tb{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+ul{margin:0;padding-left:18px}li{margin:3px 0}
+.err{color:#d92d20;margin-top:8px}.hid{display:none}
+</style></head><body><div class="w">
+<h1>Estadísticas de Control de Acceso</h1>
+<p class="sub">Carga el Excel del sistema de registro de ingresos. El archivo se procesa solo en tu navegador; no se envía a ningún servidor.</p>
+<div id="drop"><b>Haz clic o arrastra aquí tu archivo Excel</b> (.xlsx, .xls, .csv)<input id="file" type="file" accept=".xlsx,.xls,.csv" class="hid"><div id="err" class="err"></div></div>
+<div id="app" class="hid">
+<div class="card"><div class="f">
+<label>Empresa<select id="fe"></select></label>
+<label>Tipo de personal<select id="ft"></select></label>
+<label>Desde<input type="date" id="fd"></label>
+<label>Hasta<input type="date" id="fh"></label>
+<button id="rs" class="s">Restablecer</button></div>
+<p class="sub" id="per" style="margin:10px 0 0"></p></div>
+<div class="kg" id="kpi"></div>
+<div class="card"><h2>Hallazgos automáticos</h2><ul id="ins"></ul></div>
+<div class="g">
+<div class="card"><h2>Ingresos por empresa (top 12)</h2><div class="cv"><canvas id="c1"></canvas></div></div>
+<div class="card"><h2>Horas totales en planta por empresa (top 12)</h2><div class="cv"><canvas id="c2"></canvas></div></div>
+<div class="card"><h2>Ingresos y personas únicas por día</h2><div class="cv"><canvas id="c3"></canvas></div></div>
+<div class="card"><h2>Hora de ingreso (distribución)</h2><div class="cv"><canvas id="c4"></canvas></div></div>
+<div class="card"><h2>Ingresos por día de la semana</h2><div class="cv"><canvas id="c5"></canvas></div></div>
+<div class="card"><h2>Duración de la estadía</h2><div class="cv"><canvas id="c6"></canvas></div></div>
+<div class="card"><h2>Tipo de personal</h2><div class="cv"><canvas id="c7"></canvas></div></div>
+</div>
+<div class="card"><div class="tb"><h2 style="margin:0">Estadísticas generales por empresa</h2><button class="s" id="cpE">Copiar tabla</button></div><div class="tw"><table id="tE"></table></div></div>
+<div class="card"><div class="tb"><h2 style="margin:0">Horas en interior y días de ingreso por persona</h2>
+<span class="f"><input type="search" id="q" placeholder="Buscar nombre, RUT o empresa"><button class="s" id="cpP">Copiar tabla</button></span></div>
+<p class="sub" id="pn" style="margin:0 0 8px"></p><div class="tw"><table id="tP"></table></div></div>
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nf=(n,d=1)=>Number(n).toLocaleString('es-CL',{maximumFractionDigits:d});
+const DOW=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+let ST=[],F=[],CH={},SE={k:'ing',d:-1},SP={k:'h',d:-1},RE=[],RP=[];
+function pd(v){if(v==null||v==='')return null;
+ if(typeof v==='number')return new Date(Math.round((v-25569)*864e5));
+ const s=String(v).trim();let m=s.match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):?(\d{2})?/);
+ if(m)return new Date(Date.UTC(+m[1],m[2]-1,+m[3],+m[4],+m[5],+(m[6]||0)));
+ m=s.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})[ T](\d{1,2}):(\d{2}):?(\d{2})?/);
+ return m?new Date(Date.UTC(+m[3],m[2]-1,+m[1],+m[4],+m[5],+(m[6]||0))):null}
+const dk=d=>d.toISOString().slice(0,10);
+function build(rows){
+ const h=rows[0].map(x=>String(x||'').trim().toLowerCase()),ix=n=>h.indexOf(n);
+ const fh=h.map((x,i)=>x.startsWith('fecha hora')?i:-1).filter(i=>i>=0);
+ const c={rut:ix('rut'),per:ix('persona'),tipo:ix('tipo personal'),prov:ix('proveedor'),en:ix('fecha primer ingreso'),fz:ix('forzado')};
+ if(c.rut<0||c.per<0||(c.en<0&&!fh.length))throw new Error('No encuentro las columnas Rut, Persona y fechas. Revisa que sea el reporte correcto.');
+ const M=new Map();
+ for(const r of rows.slice(1)){
+  const fs=fh.map(i=>pd(r[i])).filter(Boolean);let en=c.en>=0?pd(r[c.en]):null;
+  if(!en&&fs.length)en=new Date(Math.min(...fs));if(!en||!r[c.rut])continue;
+  const ex=fs.length?new Date(Math.max(...fs)):en,key=r[c.rut]+'|'+en.getTime()+'|'+ex.getTime();
+  const tipo=String(r[c.tipo]||'Sin tipo').trim();let emp=String(r[c.prov]||'').trim();
+  if(!emp)emp=tipo==='Visita'?'VISITAS':tipo==='Planta'?'PERSONAL PLANTA':'SIN EMPRESA';
+  const fz=c.fz>=0&&!!r[c.fz];
+  if(M.has(key)){if(fz)M.get(key).fz=true;continue}
+  M.set(key,{rut:String(r[c.rut]).trim(),per:String(r[c.per]||'').trim(),emp,tipo,en,ex,h:Math.max(0,(ex-en)/36e5),fz});
+ }
+ return[...M.values()]}
+function load(file){$('#err').textContent='';const fr=new FileReader();
+ fr.onload=e=>{try{const wb=XLSX.read(e.target.result,{type:'array'});
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null});
+  ST=build(rows);if(!ST.length)throw new Error('No se encontraron registros válidos.');init()}
+  catch(x){$('#err').textContent='Error: '+x.message}};
+ fr.readAsArrayBuffer(file)}
+const opt=(a,t)=>`<option value="">${t}</option>`+a.map(x=>`<option>${esc(x)}</option>`).join('');
+function init(){$('#app').classList.remove('hid');
+ $('#fe').innerHTML=opt([...new Set(ST.map(s=>s.emp))].sort(),'Todas');
+ $('#ft').innerHTML=opt([...new Set(ST.map(s=>s.tipo))].sort(),'Todos');
+ const ds=ST.map(s=>dk(s.en)).sort();$('#fd').value=$('#fd').min=$('#fh').min=ds[0];$('#fh').value=$('#fd').max=$('#fh').max=ds[ds.length-1];render()}
+function agg(list,key,init){const m=new Map();
+ for(const s of list){const k=key(s);let o=m.get(k);if(!o){o={k,ing:0,P:new Set(),D:new Set(),h:0,max:0,fz:0,...init(s)};m.set(k,o)}
+  o.ing++;o.P.add(s.rut);o.D.add(dk(s.en));o.h+=s.h;o.max=Math.max(o.max,s.h);if(s.fz)o.fz++}
+ return[...m.values()]}
+function mk(id,type,labels,ds,o={}){CH[id]?.destroy();const mu=getComputedStyle(document.documentElement).getPropertyValue('--mu').trim(),bd=getComputedStyle(document.documentElement).getPropertyValue('--bd').trim();
+ Chart.defaults.color=mu;Chart.defaults.borderColor=bd;
+ CH[id]=new Chart($('#'+id),{type,data:{labels,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:ds.length>1||type==='doughnut'}},...o}})}
+const PAL=['#1f6feb','#0d9488','#f59e0b','#ef4444','#8b5cf6','#ec4899','#84cc16','#06b6d4'];
+function render(){
+ const e=$('#fe').value,t=$('#ft').value,d1=$('#fd').value,d2=$('#fh').value;
+ F=ST.filter(s=>(!e||s.emp===e)&&(!t||s.tipo===t)&&dk(s.en)>=d1&&dk(s.en)<=d2);
+ $('#per').textContent=`Período: ${d1} a ${d2} · ${nf(F.length,0)} ingresos analizados (estadías únicas, sin duplicar entrada y salida)`;
+ const E=agg(F,s=>s.emp,()=>({})),Pp=agg(F,s=>s.rut,s=>({per:s.per,emp:s.emp}));
+ const days=new Set(F.map(s=>dk(s.en))),H=F.reduce((a,s)=>a+s.h,0),nP=new Set(F.map(s=>s.rut)).size;
+ $('#kpi').innerHTML=[['Ingresos',nf(F.length,0),'estadías en el período'],['Personas únicas',nf(nP,0)],['Empresas',nf(E.length,0)],['Días con ingreso',nf(days.size,0),'días distintos con actividad'],['Horas totales en planta',nf(H,0)+' h'],['Promedio por estadía',nf(F.length?H/F.length:0)+' h'],['Ingresos por persona',nf(nP?F.length/nP:0)],['Ingresos forzados',nf(F.filter(s=>s.fz).length,0),F.length?nf(F.filter(s=>s.fz).length*100/F.length)+'% del total':'']].map(([l,v,s])=>`<div class="k"><b>${v}</b><span>${l}</span><i>${s||'&nbsp;'}</i></div>`).join('');
+ // gráficos
+ const top=(k)=>[...E].sort((a,b)=>b[k]-a[k]).slice(0,12);
+ const hb={indexAxis:'y',scales:{x:{beginAtZero:true}}};
+ mk('c1','bar',top('ing').map(x=>x.k),[{data:top('ing').map(x=>x.ing),backgroundColor:PAL[0]}],hb);
+ mk('c2','bar',top('h').map(x=>x.k),[{data:top('h').map(x=>Math.round(x.h)),backgroundColor:PAL[1]}],hb);
+ const D=agg(F,s=>dk(s.en),()=>({})).sort((a,b)=>a.k<b.k?-1:1);
+ mk('c3','bar',D.map(x=>x.k.slice(5)),[{label:'Ingresos',data:D.map(x=>x.ing),backgroundColor:PAL[0]},{label:'Personas únicas',type:'line',data:D.map(x=>x.P.size),borderColor:PAL[2],backgroundColor:PAL[2],tension:.3}]);
+ const hr=Array(24).fill(0);F.forEach(s=>hr[s.en.getUTCHours()]++);
+ mk('c4','bar',hr.map((_,i)=>i+':00'),[{data:hr,backgroundColor:PAL[4]}]);
+ const dw=Array(7).fill(0);F.forEach(s=>dw[s.en.getUTCDay()]++);
+ mk('c5','bar',DOW,[{data:dw,backgroundColor:PAL[3]}]);
+ const bk=[2,4,6,8,10,12,Infinity],bl=['<2 h','2-4 h','4-6 h','6-8 h','8-10 h','10-12 h','>12 h'],bc=Array(7).fill(0);
+ F.forEach(s=>bc[bk.findIndex(b=>s.h<b)]++);
+ mk('c6','bar',bl,[{data:bc,backgroundColor:PAL[1]}]);
+ const TP=agg(F,s=>s.tipo,()=>({}));
+ mk('c7','doughnut',TP.map(x=>x.k),[{data:TP.map(x=>x.ing),backgroundColor:PAL}]);
+ // hallazgos
+ const li=[];if(F.length){const m=(a,k)=>a.reduce((x,y)=>y[k]>x[k]?y:x);
+  const eT=m(E,'ing'),eH=m(E,'h'),pH=m(Pp,'h'),pD=m(Pp,'D'.length?'ing':'ing'),dP=m(D,'ing'),hP=hr.indexOf(Math.max(...hr));
+  li.push(`Empresa con más ingresos: <b>${esc(eT.k)}</b> (${nf(eT.ing,0)} ingresos, ${eT.P.size} personas).`,
+  `Empresa con más horas en planta: <b>${esc(eH.k)}</b> (${nf(eH.h,0)} h).`,
+  `Persona con más horas en interior: <b>${esc(pH.per)}</b> (${esc(pH.emp)}), ${nf(pH.h)} h en ${pH.D.size} días.`,
+  `Persona con más ingresos: <b>${esc(pD.per)}</b>, ${pD.ing} ingresos.`,
+  `Día con más ingresos: <b>${dP.k}</b> (${dP.ing}). Hora punta de ingreso: <b>${hP}:00</b>.`,
+  `Estadías de más de 12 h: <b>${bc[6]}</b> (${nf(bc[6]*100/F.length)}%) — conviene revisarlas por posibles salidas no marcadas.`)}
+ $('#ins').innerHTML=li.map(x=>`<li>${x}</li>`).join('');
+ RE=E.map(x=>({emp:x.k,ing:x.ing,per:x.P.size,dias:x.D.size,h:x.h,hing:x.h/x.ing,hper:x.h/x.P.size,ipp:x.ing/x.P.size,fz:x.fz}));
+ RP=Pp.map(x=>({rut:x.k,per:x.per,emp:x.emp,dias:x.D.size,ing:x.ing,h:x.h,hdia:x.h/x.D.size,max:x.max}));
+ tE();tP()}
+const f1=v=>nf(v),f0=v=>nf(v,0);
+const CE=[{k:'emp',l:'Empresa'},{k:'ing',l:'Ingresos',n:1,f:f0},{k:'per',l:'Personas',n:1,f:f0},{k:'dias',l:'Días con ingreso',n:1,f:f0},{k:'h',l:'Horas totales',n:1,f:f1},{k:'hing',l:'Prom. h por ingreso',n:1,f:f1},{k:'hper',l:'Prom. h por persona',n:1,f:f1},{k:'ipp',l:'Ingresos por persona',n:1,f:f1},{k:'fz',l:'Forzados',n:1,f:f0}];
+const CP=[{k:'rut',l:'RUT'},{k:'per',l:'Persona'},{k:'emp',l:'Empresa'},{k:'dias',l:'Días de ingreso',n:1,f:f0},{k:'ing',l:'Ingresos',n:1,f:f0},{k:'h',l:'Horas en interior',n:1,f:f1},{k:'hdia',l:'Prom. h por día',n:1,f:f1},{k:'max',l:'Estadía máx. (h)',n:1,f:f1}];
+function draw(el,cols,rows,st,re,lim){rows=[...rows].sort((a,b)=>{const x=a[st.k],y=b[st.k];return(typeof x==='string'?x.localeCompare(y):x-y)*st.d});
+ $(el).innerHTML='<thead><tr>'+cols.map(c=>`<th data-k="${c.k}">${c.l}${st.k===c.k?(st.d>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+rows.slice(0,lim).map(r=>'<tr>'+cols.map(c=>`<td class="${c.n?'n':''}">${c.f?c.f(r[c.k]):esc(r[c.k])}</td>`).join('')+'</tr>').join('')+'</tbody>';
+ $(el).querySelectorAll('th').forEach(th=>th.onclick=()=>{const k=th.dataset.k;st.d=st.k===k?-st.d:-1;st.k=k;re()});return rows}
+function tE(){draw('#tE',CE,RE,SE,tE,500)}
+function pf(){const q=$('#q').value.toLowerCase();return q?RP.filter(r=>(r.per+r.rut+r.emp).toLowerCase().includes(q)):RP}
+function tP(){const r=pf();$('#pn').textContent=`${nf(r.length,0)} personas${r.length>400?' (se muestran las primeras 400; usa el buscador o copia la tabla completa)':''}`;draw('#tP',CP,r,SP,tP,400)}
+function copy(cols,rows,st){const r=[...rows].sort((a,b)=>{const x=a[st.k],y=b[st.k];return(typeof x==='string'?x.localeCompare(y):x-y)*st.d});
+ const tx=[cols.map(c=>c.l).join('\t'),...r.map(x=>cols.map(c=>c.n?String(x[c.k]).replace('.',','):x[c.k]).join('\t'))].join('\n');
+ const ta=document.createElement('textarea');ta.value=tx;document.body.appendChild(ta);ta.select();
+ let ok=false;try{ok=document.execCommand('copy')}catch(e){}ta.remove();return ok}
+$('#cpE').onclick=e=>{const b=e.target;b.textContent=copy(CE,RE,SE)?'¡Copiada! Pega en Excel':'No se pudo copiar';setTimeout(()=>b.textContent='Copiar tabla',2200)};
+$('#cpP').onclick=e=>{const b=e.target;b.textContent=copy(CP,pf(),SP)?'¡Copiada! Pega en Excel':'No se pudo copiar';setTimeout(()=>b.textContent='Copiar tabla',2200)};
+['#fe','#ft','#fd','#fh'].forEach(s=>$(s).onchange=render);$('#q').oninput=tP;
+$('#rs').onclick=()=>{$('#fe').value=$('#ft').value='';init()};
+const dr=$('#drop');dr.onclick=()=>$('#file').click();$('#file').onchange=e=>e.target.files[0]&&load(e.target.files[0]);
+dr.ondragover=e=>{e.preventDefault();dr.classList.add('o')};dr.ondragleave=()=>dr.classList.remove('o');
+dr.ondrop=e=>{e.preventDefault();dr.classList.remove('o');e.dataTransfer.files[0]&&load(e.dataTransfer.files[0])};
+matchMedia('(prefers-color-scheme: dark)').onchange=()=>ST.length&&render();
+</script></body></html>
